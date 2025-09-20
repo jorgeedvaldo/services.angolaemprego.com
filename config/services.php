@@ -31,4 +31,24 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+     /*
+    |--------------------------------------------------------------------------
+    | Custom Third Party Services
+    |--------------------------------------------------------------------------
+    | This file is for storing the credentials for third party services such
+    |
+    */
+
+    'facebookapi' => [
+        'token' => env('FACEBOOK_API_TOKEN'),
+    ],
+
+    'linkedinapi' => [
+        'token' => env('LINKEDIN_API_TOKEN'),
+    ],
+
+    'geminiapi' => [
+        'token' => env('GEMINI_API_TOKEN'),
+    ],
+
 ];
