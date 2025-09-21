@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\SocialMedia;
+namespace App\Services;
 
 class SocialMediaService
 {

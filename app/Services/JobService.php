@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use GuzzleHttp\Client;
-use App\Services\SocialMedia\SocialMediaService;
+use App\Services\SocialMediaService;
 use App\Models\Link;
 
 class JobService
