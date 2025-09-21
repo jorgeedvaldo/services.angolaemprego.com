@@ -4,7 +4,7 @@ use App\Http\Controllers\JobController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LinkController;
 use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\SocialMediaController;
+use App\Http\Controllers\SocialPostController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,4 +24,4 @@ Route::get('/', function () {
 Route::get('/ObterAngolaEmpregoAngoEmprego', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
 Route::get('/ObterAngolaEmpregoAngoEmprego/{website}', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
 Route::get('/Obter/{website}', [JobController::class, 'fetchFromWebsite']);
-Route::get('/PostOnMedia', [SocialMediaController::class, 'postLastToMedia']);
+Route::get('/PostOnMedia', [SocialPostController::class, 'postLastToMedia']);
