@@ -15,6 +15,8 @@ return new class extends Migration
     {
         Schema::create('social_media_jobs', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('job_id');
+            $table->integer('post_status')->default(0);
             $table->timestamps();
         });
     }
