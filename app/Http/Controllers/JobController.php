@@ -14,8 +14,8 @@ class JobController extends Controller
         $this->jobService = $jobService;
     }
 
-    public function fetchFromWebsite()
+    public function fetchFromWebsite(string $website = 'angoemprego.com')
     {
-        return $this->jobService->fetchFromWebsite();
+        return $this->jobService->fetchFromWebsite($website);
     }
 }

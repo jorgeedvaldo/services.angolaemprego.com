@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\JobController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LinkController;
 use Illuminate\Support\Facades\Artisan;
@@ -21,3 +22,4 @@ Route::get('/', function () {
 
 Route::get('/ObterAngolaEmpregoAngoEmprego', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
 Route::get('/ObterAngolaEmpregoAngoEmprego/{website}', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
+Route::get('/Obter/{website}', [JobController::class, 'fetchFromWebsite']);
