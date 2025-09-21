@@ -41,7 +41,7 @@ class SocialPostController extends Controller
 
     public function postLastToMedia()
     {
-        $socialMediaJob = SocialMediaJob::where('posted', false)
+        $socialMediaJob = SocialMediaJob::where('post_status', false)
             ->first();
         $job = Job::find($socialMediaJob->job_id);
 
