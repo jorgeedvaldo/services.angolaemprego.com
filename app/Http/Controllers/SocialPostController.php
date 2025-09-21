@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\LinkedInController;
 use App\Models\Job;
+use App\Models\SocialMediaJob;
 
 class SocialPostController extends Controller
 {
@@ -34,6 +35,20 @@ class SocialPostController extends Controller
         } else {
             $this->linkedInController->publishText($message);
         }
+
+        return response()->json(['status' => 'Posts submitted']);
+    }
+
+    public function postLastToMedia()
+    {
+        $socialMediaJob = SocialMediaJob::where('posted', false)
+            ->first();
+        $job = Job::find($socialMediaJob->job_id);
+
+        $this->postToSocialMedia($job);
+
+        $socialMediaJob->posted = true;
+        $socialMediaJob->save();
 
         return response()->json(['status' => 'Posts submitted']);
     }
