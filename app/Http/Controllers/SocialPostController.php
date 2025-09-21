@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\FacebookController;
-use App\Http\Controllers\LinkedInController;
+use App\Http\Controllers\LinkedinController;
 use App\Models\Job;
 use App\Models\SocialMediaJob;
 
 class SocialPostController extends Controller
 {
     protected FacebookController $facebookController;
-    protected LinkedInController $linkedInController;
+    protected LinkedinController $linkedInController;
 
     public function __construct(
         FacebookController $facebookController,
-        LinkedInController $linkedInController
+        LinkedinController $linkedInController
     ) {
         $this->facebookController = $facebookController;
         $this->linkedInController = $linkedInController;

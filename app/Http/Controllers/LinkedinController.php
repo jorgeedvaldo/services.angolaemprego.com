@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use GuzzleHttp\Client;
+use App\Services\LinkedInService;
 
-class LinkedInController extends Controller
+class LinkedinController extends Controller
 {
     protected $client;
     protected $accessToken;
