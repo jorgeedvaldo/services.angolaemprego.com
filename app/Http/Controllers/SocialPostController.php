@@ -47,7 +47,7 @@ class SocialPostController extends Controller
 
         $this->postToSocialMedia($job);
 
-        $socialMediaJob->posted = true;
+        $socialMediaJob->post_status = true;
         $socialMediaJob->save();
 
         return response()->json(['status' => 'Posts submitted']);
