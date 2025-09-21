@@ -10,10 +10,12 @@ class JobService
 {
     protected $http;
     protected $socialMedia;
+    protected $geminiService;
 
     public function __construct()
     {
         $this->http = new Client(['verify' => false]); // SSL off por enquanto
+        $this->geminiService = new GeminiService();
     }
 
     public function fetchFromWebsite(string $website = 'angoemprego.com')
@@ -39,6 +41,12 @@ class JobService
 
             // Descrição simplificada
             $description = strip_tags($job->content->rendered);
+
+            // Formatar descrição com Gemini
+            $description = $this->geminiService->formatarDescricaoVaga($description);
+
+            //Formatar Titulo com Gemini
+            $job->title->rendered = $this->geminiService->gerarTituloVaga($job->title->rendered);
 
             // Salvar job no teu portal
             $savedJob = $this->saveJob([
