@@ -23,6 +23,7 @@ class GeminiService
     private function requestGemini($prompt, $format)
     {
         $response = $this->client->post($this->url, [
+            'verify' => false,
             'headers' => ['Content-Type' => 'application/json'],
             'query'   => ['key' => $this->apiKey],
             'json'    => [
