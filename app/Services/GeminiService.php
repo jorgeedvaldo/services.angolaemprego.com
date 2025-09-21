@@ -61,7 +61,7 @@ class GeminiService
 
     public function formatarDescricaoVaga($descricao)
     {
-        $prompt = "tenho o seguinte texto e pretendo transformar em linguagem de marcação (formatação html) com bolds e titulos, etc para gravar como artigo na base de dados do meu site de empregos, dê um tratamento para a informação estar perceptivel no meu site e coloque o modo de se candidatar no final, por favor faça isso e envie os dados no seguinte formato JSON: {description: DESCRICÃO_EM_HYPERTEXTO}: " . $descricao;
+        $prompt = "tenho o seguinte texto e pretendo transformar em linguagem de marcação (formatação html) com bolds e titulos, etc para gravar como artigo na base de dados do meu site de empregos, dê um tratamento, o texto não necessariamente deve ficar igual mas deves fazer como se estivesses a criar um novo artigo e coloque o modo de se candidatar no final, por favor faça isso e envie os dados no seguinte formato JSON: {description: DESCRICÃO_EM_HYPERTEXTO}: " . $descricao;
         return $this->requestGemini($prompt, 'description');
     }
 
