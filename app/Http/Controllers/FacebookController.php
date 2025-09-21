@@ -9,7 +9,7 @@ class FacebookController extends Controller
 {
     protected FacebookService $facebookService;
 
-    public function __construct(protected FacebookService $facebookService)
+    public function __construct(FacebookService $facebookService)
     {
         $this->facebookService = $facebookService;
     }
