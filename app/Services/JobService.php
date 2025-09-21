@@ -60,14 +60,6 @@ class JobService
                 'url' => $job->link,
                 'country_id' => 1,
             ]);
-
-            // Publicar no Facebook e LinkedIn
-            $this->socialMedia->publishJob([
-                'title' => $job->title->rendered,
-                'description' => $description,
-                'link' => "https://angolaemprego.com/vagas/" . $savedJob['slug'],
-                'image' => "https://angolaemprego.com/storage/images/jobs/default.png",
-            ]);
         }
     }
 
