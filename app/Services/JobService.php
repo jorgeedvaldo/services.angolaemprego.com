@@ -11,13 +11,12 @@ class JobService
     protected $http;
     protected $socialMedia;
 
-    public function __construct(SocialMediaService $socialMedia)
+    public function __construct()
     {
         $this->http = new Client(['verify' => false]); // SSL off por enquanto
-        $this->socialMedia = $socialMedia;
     }
 
-    public function fetchAngoEmprego(string $website = 'angoemprego.com')
+    public function fetchFromWebsite(string $website = 'angoemprego.com')
     {
         $response = $this->http->get("https://{$website}/wp-json/wp/v2/job-listings");
         if ($response->getStatusCode() !== 200) {
