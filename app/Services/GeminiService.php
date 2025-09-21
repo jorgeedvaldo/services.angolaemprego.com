@@ -17,7 +17,7 @@ class GeminiService
     {
         $this->client = new Client();
         $this->apiKey = config('services.geminiapi.token');
-        $this->url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        $this->url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
     }
 
     private function requestGemini($prompt, $format)
