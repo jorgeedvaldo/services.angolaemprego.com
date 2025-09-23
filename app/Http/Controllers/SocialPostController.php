@@ -43,6 +43,11 @@ class SocialPostController extends Controller
     {
         $socialMediaJob = SocialMediaJob::where('post_status', false)
             ->first();
+            
+        if (!$socialMediaJob) {
+            return response()->json(['status' => 'No pending posts']);
+        }
+
         $job = Job::find($socialMediaJob->job_id);
 
         $this->postToSocialMedia($job);
