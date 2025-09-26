@@ -65,9 +65,21 @@ class GeminiService
         return $this->requestGemini($prompt, 'description');
     }
 
+    public function formatarDescricao($descricao)
+    {
+        $prompt = "tenho o seguinte texto e pretendo que tu ESCREVAS UM ARTIGO PARA O MEU SITE, USE PT-BR E SE BASEIE NO TEXTO PARA GERAR O MEU ARTIGO. Deves transformar em linguagem de marcação (formatação html) com bolds e titulos, etc para gravar como artigo na base de dados do meu site, dê um tratamento e não esqueças que deves gerar um novo artigo, por favor faça isso e envie os dados no seguinte formato JSON: {description: DESCRICÃO_EM_HYPERTEXTO}. O texto para se inspirar é o seguinte: " . $descricao;
+        return $this->requestGemini($prompt, 'description');
+    }
+
     public function gerarTituloVaga($tituloAntigo = 'Administrador')
     {
         $prompt = 'Crie um titulo para esta vaga de emprego: "' . $tituloAntigo . '". Os titulos nunca devem ser na primeira pessoa e devem ter o estilo parecido com: Vaga para xxx, precisa-se de, grande oportunidade para, opotunidade urgente, etc. Quero o dado no seguinte formato json: {title: TITULO_DA_VAGA}';
+        return $this->requestGemini($prompt, 'title');
+    }
+
+    public function gerarTitulo($tituloAntigo)
+    {
+        $prompt = 'Crie uma variação de titulo para este artigo: "' . $tituloAntigo . '". o titulo deve ser fácil de compreender e deve ter um bom SEO. Quero o dado no seguinte formato json: {title: TITULO_DO_ARTIGO}';
         return $this->requestGemini($prompt, 'title');
     }
 
