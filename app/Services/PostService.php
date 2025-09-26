@@ -21,7 +21,7 @@ class PostService
     public function fetchFromWebsite()
     {
         try {
-            $response = $this->http->get('https://www.infomoney.com.br/wp-json/wp/v2/posts');
+            $response = $this->http->get('https://clickpetroleoegas.com.br/wp-json/wp/v2/posts');
         } catch (\Exception $e) {
             \Log::error('Falha na requisição HTTP para clickpetroleoegas: ' . $e->getMessage());
             return;
