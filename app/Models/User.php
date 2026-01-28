@@ -21,6 +21,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'cv_path',
+        'subscription_start',
+        'subscription_end',
+        'subscription_status',
     ];
 
     /**
@@ -40,5 +44,24 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'subscription_start' => 'datetime',
+        'subscription_end' => 'datetime',
     ];
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'category_user')->withTimestamps();
+    }
+
+    public function getCvUrlAttribute()
+    {
+        return $this->cv_path ? asset('storage/' . $this->cv_path) : null;
+    }
+
+    public function hasActiveSubscription()
+    {
+        return $this->subscription_status === 'active' && 
+               $this->subscription_end && 
+               $this->subscription_end->isFuture();
+    }
 }

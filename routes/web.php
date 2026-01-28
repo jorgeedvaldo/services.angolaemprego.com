@@ -6,6 +6,7 @@ use App\Http\Controllers\LinkController;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\SocialPostController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\AutoApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,3 +28,4 @@ Route::get('/ObterAngolaEmpregoAngoEmprego/{website}', [LinkController::class, '
 Route::get('/Obter/{website}', [JobController::class, 'fetchFromWebsite']);
 Route::get('/ObterPost', [PostController::class, 'fetchFromWebsite']);
 Route::get('/PostOnMedia', [SocialPostController::class, 'postLastToMedia']);
+Route::get('/fetch-match-jobs', [AutoApplicationController::class, 'fetchAndMatchJobs']);
