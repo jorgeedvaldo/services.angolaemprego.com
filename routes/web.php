@@ -20,7 +20,11 @@ use App\Http\Controllers\AutoApplicationController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    $pendingApplications = \App\Models\AutoApplication::where('status', 'pending')
+        ->with(['user', 'trackedJob'])
+        ->get();
+
+    return view('welcome', compact('pendingApplications'));
 });
 
 Route::get('/ObterAngolaEmpregoAngoEmprego', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
