@@ -88,34 +88,58 @@
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         @forelse ($pendingApplications as $application)
                                             <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                <td class="px-6 py-4 whitespace-nowrap align-top">
                                                     <input type="checkbox" name="ids[]" value="{{ $application->id }}" class="application-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
                                                     {{ $application->user->name }} <br>
                                                     <span class="text-xs text-gray-500">{{ $application->user->email }}</span>
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
                                                     {{ $application->trackedJob->job_title }}
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
                                                     {{ $application->trackedJob->provider }}
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
                                                     {{ $application->trackedJob->provider_job_id }}
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                <td class="px-6 py-4 whitespace-nowrap align-top">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                         {{ $application->status }}
                                                     </span>
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                                    @if($application->user->cv_url)
-                                                        <a href="{{ $application->user->cv_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">CV</a>
-                                                    @endif
-                                                    
-                                                    <button type="submit" form="form-send-{{ $application->id }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">Send</button>
-                                                    <button type="submit" form="form-fail-{{ $application->id }}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                                                <td class="px-6 py-4 text-sm font-medium align-top">
+                                                    <div class="flex space-x-2 mb-2">
+                                                        @if($application->user->cv_url)
+                                                            <a href="{{ $application->user->cv_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">CV</a>
+                                                        @endif
+                                                        
+                                                        <button type="submit" name="action" value="send_{{ $application->id }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">Send</button>
+                                                        <button type="submit" name="action" value="fail_{{ $application->id }}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                                                    </div>
+
+                                                    <details class="text-xs text-gray-500 cursor-pointer">
+                                                        <summary class="hover:text-gray-700 dark:hover:text-gray-300">Edit Email</summary>
+                                                        <div class="mt-2 space-y-2">
+                                                            <div>
+                                                                <label class="block text-gray-700 dark:text-gray-300">Subject</label>
+                                                                <input type="text" name="applications[{{ $application->id }}][subject]" value="Candidatura - {{ $application->trackedJob->job_title }} - {{ $application->user->name }}" class="w-full text-xs rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600">
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-gray-700 dark:text-gray-300">Message</label>
+                                                                <textarea name="applications[{{ $application->id }}][message]" rows="4" class="w-full text-xs rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600">Prezados,
+
+Gostaria de submeter meu currículo para análise referente à oportunidade descrita no assunto.
+
+Segue em anexo o meu currículo com detalhes sobre minha trajetória profissional e formação. Coloco-me à disposição para uma entrevista, a fim de apresentar melhor minhas qualificações e como posso contribuir para a equipe.
+
+Agradeço desde já a atenção e aguardo um retorno.
+
+Grato.</textarea>
+                                                            </div>
+                                                        </div>
+                                                    </details>
                                                 </td>
                                             </tr>
                                         @empty
@@ -129,15 +153,6 @@
                                 </table>
                             </div>
                         </form>
-                        
-                        @foreach ($pendingApplications as $application)
-                            <form id="form-send-{{ $application->id }}" action="{{ route('applications.send', $application) }}" method="POST" class="hidden">
-                                @csrf
-                            </form>
-                            <form id="form-fail-{{ $application->id }}" action="{{ route('applications.fail', $application) }}" method="POST" class="hidden">
-                                @csrf
-                            </form>
-                        @endforeach
                     </div>
                 </div>
 

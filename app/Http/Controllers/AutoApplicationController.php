@@ -95,6 +95,35 @@ class AutoApplicationController extends Controller
 
     public function bulkUpdate(Request $request)
     {
+        $action = $request->action;
+
+        // Verificar se é uma ação individual (send_ID ou fail_ID)
+        if (\Illuminate\Support\Str::contains($action, '_')) {
+            $parts = explode('_', $action);
+            $type = $parts[0];
+            $id = $parts[1];
+            
+            $app = AutoApplication::find($id);
+
+            if ($app) {
+                // Se for envio, vamos guardar o Assunto e Mensagem personalizados
+                if ($type === 'send' && $request->has("applications.{$id}")) {
+                    $data = $request->input("applications.{$id}");
+                    $app->subject = $data['subject'] ?? null;
+                    $app->message = $data['message'] ?? null;
+                    $app->status = 'sent';
+                    $app->save();
+                    
+                    return redirect()->back()->with('success', 'Application marked as sent.');
+                } elseif ($type === 'fail') {
+                    $app->status = 'failed';
+                    $app->save();
+                    return redirect()->back()->with('success', 'Application marked as failed.');
+                }
+            }
+        } 
+        
+        // Ação em massa
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:auto_applications,id',
@@ -103,7 +132,24 @@ class AutoApplicationController extends Controller
 
         $status = $request->action === 'send' ? 'sent' : 'failed';
 
-        AutoApplication::whereIn('id', $request->ids)->update(['status' => $status]);
+        // Para ação em massa, podemos também querer salvar os dados, mas assumindo os defaults do form ou ignorando para simplificar. 
+        // Se quisermos salvar, teríamos que iterar. Vamos iterar para salvar se for send.
+        
+        $ids = $request->ids;
+        if ($status === 'sent') {
+            foreach($ids as $id) {
+                 $app = AutoApplication::find($id);
+                 if ($request->has("applications.{$id}")) {
+                    $data = $request->input("applications.{$id}");
+                    $app->subject = $data['subject'] ?? null;
+                    $app->message = $data['message'] ?? null;
+                 }
+                 $app->status = 'sent';
+                 $app->save();
+            }
+        } else {
+             AutoApplication::whereIn('id', $ids)->update(['status' => $status]);
+        }
 
         return redirect()->back()->with('success', 'Selected applications updated.');
     }
