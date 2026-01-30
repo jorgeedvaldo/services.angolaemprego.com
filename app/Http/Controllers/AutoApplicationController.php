@@ -80,4 +80,31 @@ class AutoApplicationController extends Controller
 
         return response()->json(['message' => 'Failed to fetch jobs from API.'], 500);
     }
+
+    public function send(AutoApplication $autoApplication)
+    {
+        $autoApplication->update(['status' => 'sent']);
+        return redirect()->back()->with('success', 'Application marked as sent.');
+    }
+
+    public function markAsFailed(AutoApplication $autoApplication)
+    {
+        $autoApplication->update(['status' => 'failed']);
+        return redirect()->back()->with('success', 'Application marked as failed.');
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:auto_applications,id',
+            'action' => 'required|in:send,fail',
+        ]);
+
+        $status = $request->action === 'send' ? 'sent' : 'failed';
+
+        AutoApplication::whereIn('id', $request->ids)->update(['status' => $status]);
+
+        return redirect()->back()->with('success', 'Selected applications updated.');
+    }
 }

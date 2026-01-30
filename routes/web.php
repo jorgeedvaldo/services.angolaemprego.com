@@ -33,3 +33,6 @@ Route::get('/Obter/{website}', [JobController::class, 'fetchFromWebsite']);
 Route::get('/ObterPost', [PostController::class, 'fetchFromWebsite']);
 Route::get('/PostOnMedia', [SocialPostController::class, 'postLastToMedia']);
 Route::get('/fetch-match-jobs', [AutoApplicationController::class, 'fetchAndMatchJobs']);
+Route::post('/applications/{autoApplication}/send', [AutoApplicationController::class, 'send'])->name('applications.send');
+Route::post('/applications/{autoApplication}/fail', [AutoApplicationController::class, 'markAsFailed'])->name('applications.fail');
+Route::post('/applications/bulk-update', [AutoApplicationController::class, 'bulkUpdate'])->name('applications.bulk-update');
