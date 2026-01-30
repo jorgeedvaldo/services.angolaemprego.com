@@ -156,7 +156,7 @@ Grato.</textarea>
                                                              <button type="submit" name="action" value="fail_{{ $application->id }}" class="flex-1 sm:flex-none bg-white hover:bg-red-50 text-red-600 font-semibold py-2.5 px-6 border border-red-200 rounded-lg shadow-sm hover:shadow-md transition-all text-center">
                                                                 Delete
                                                             </button>
-                                                            <button type="submit" name="action" value="send_{{ $application->id }}" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all text-center">
+                                                            <button type="submit" name="action" value="send_{{ $application->id }}" data-cv-url="{{ $application->user->cv_url }}" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all text-center">
                                                                 Send Application
                                                             </button>
                                                         </div>
@@ -181,12 +181,82 @@ Grato.</textarea>
                     </div>
                 </div>
 
+                <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.8/base64.min.js"></script>
                 <script>
                     document.getElementById('select-all').addEventListener('change', function() {
                         var checkboxes = document.querySelectorAll('.application-checkbox');
                         for (var checkbox of checkboxes) {
                             checkbox.checked = this.checked;
                         }
+                    });
+
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const sendButtons = document.querySelectorAll('button[value^="send_"]');
+                        
+                        sendButtons.forEach(button => {
+                            button.addEventListener('click', async function(e) {
+                                e.preventDefault();
+                                
+                                const originalText = this.innerText;
+                                this.innerText = 'Processing...';
+                                this.disabled = true;
+
+                                const actionValue = this.value;
+                                const applicationId = actionValue.split('_')[1];
+                                const cvUrl = this.dataset.cvUrl; // We need to add this data attribute
+                                const form = document.getElementById('bulk-form');
+
+                                // Remove existing temp inputs
+                                const existingAction = form.querySelector('input[name="action"]');
+                                if (existingAction) existingAction.remove();
+                                const existingCv = form.querySelector('input[name="cv_base64"]');
+                                if (existingCv) existingCv.remove();
+                                 const existingMime = form.querySelector('input[name="cv_mime"]');
+                                if (existingMime) existingMime.remove();
+
+                                // Add action input
+                                const actionInput = document.createElement('input');
+                                actionInput.type = 'hidden';
+                                actionInput.name = 'action';
+                                actionInput.value = actionValue;
+                                form.appendChild(actionInput);
+
+                                // If CV URL exists, fetch and convert
+                                if (cvUrl) {
+                                    try {
+                                        const response = await fetch(cvUrl);
+                                        const blob = await response.blob();
+                                        const reader = new FileReader();
+                                        
+                                        reader.onloadend = function() {
+                                            const base64data = reader.result.split(',')[1];
+                                            
+                                            const cvInput = document.createElement('input');
+                                            cvInput.type = 'hidden';
+                                            cvInput.name = 'cv_base64';
+                                            cvInput.value = base64data;
+                                            form.appendChild(cvInput);
+
+                                            const mimeInput = document.createElement('input');
+                                            mimeInput.type = 'hidden';
+                                            mimeInput.name = 'cv_mime';
+                                            mimeInput.value = blob.type;
+                                            form.appendChild(mimeInput);
+
+                                            form.submit();
+                                        }
+                                        
+                                        reader.readAsDataURL(blob);
+                                    } catch (error) {
+                                        console.error('Error fetching/converting CV:', error);
+                                        alert('Failed to process CV. Submitting without attachment.');
+                                        form.submit();
+                                    }
+                                } else {
+                                    form.submit();
+                                }
+                            });
+                        });
                     });
                 </script>
 

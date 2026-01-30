@@ -106,15 +106,73 @@ class AutoApplicationController extends Controller
             $app = AutoApplication::find($id);
 
             if ($app) {
-                // Se for envio, vamos guardar o Assunto e Mensagem personalizados
-                if ($type === 'send' && $request->has("applications.{$id}")) {
-                    $data = $request->input("applications.{$id}");
-                    $app->subject = $data['subject'] ?? null;
-                    $app->message = $data['message'] ?? null;
-                    $app->status = 'sent';
-                    $app->save();
+                // Se for envio, vamos guardar o Assunto e Mensagem personalizados e enviar o email
+                if ($type === 'send') {
+                    if ($request->has("applications.{$id}")) {
+                        $data = $request->input("applications.{$id}");
+                        $app->subject = $data['subject'] ?? null;
+                        $app->message = $data['message'] ?? null;
+                    }
                     
-                    return redirect()->back()->with('success', 'Application marked as sent.');
+                    // Enviar Email via Maileroo
+                    $payload = [
+                        "from" => [
+                            "address" => "rosa.barbosa@angolaemprego.com",
+                            "display_name" => "Rosa Barbosa"
+                        ],
+                        "to" => [
+                           [
+                               "address" => $app->trackedJob->apply_email
+                           ]
+                        ],
+                        "cc" => [
+                            "address" => $app->user->email,
+                             "display_name" => $app->user->name
+                        ],
+                        "subject" => $app->subject ?? "Candidatura - {$app->trackedJob->job_title}",
+                        "html" => nl2br($app->message ?? "Prezados,\n\nGostaria de submeter a minha candidatura."),
+                        "tracking" => true
+                    ];
+
+                    // Adicionar anexo se existir
+                    if ($request->has('cv_base64')) {
+                        $base64Content = $request->input('cv_base64');
+                        $mimeType = $request->input('cv_mime', 'application/pdf');
+                        
+                        // Validar se é base64 válido (opcional, mas bom)
+                        // Apenas adicionar ao payload
+                        $payload['attachments'] = [
+                            [
+                                "file_name" => "Curriculo_" . \Illuminate\Support\Str::slug($app->user->name) . ".pdf", // Assumindo PDF ou usar extensão correta se possível
+                                "content_type" => $mimeType,
+                                "content" => $base64Content,
+                                "inline" => false
+                            ]
+                        ];
+                    }
+
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::withHeaders([
+                            'X-API-Key' => '59f9182403175d7a3769880df0d4e8459fd710d48582656ea3366ed4be987be6',
+                            'Content-Type' => 'application/json'
+                        ])->post('https://smtp.maileroo.com/api/v2/emails', $payload);
+
+                        if ($response->successful()) {
+                            $app->status = 'sent';
+                            $app->save();
+                            return redirect()->back()->with('success', 'Application sent successfully via Maileroo.');
+                        } else {
+                            $app->error_message = $response->body();
+                            $app->status = 'failed';
+                            $app->save();
+                            return redirect()->back()->with('error', 'Failed to send email: ' . $response->body());
+                        }
+                    } catch (\Exception $e) {
+                         $app->error_message = $e->getMessage();
+                         $app->status = 'failed';
+                         $app->save();
+                         return redirect()->back()->with('error', 'Exception sending email: ' . $e->getMessage());
+                    }
                 } elseif ($type === 'fail') {
                     $app->status = 'failed';
                     $app->save();
@@ -144,6 +202,7 @@ class AutoApplicationController extends Controller
                     $app->subject = $data['subject'] ?? null;
                     $app->message = $data['message'] ?? null;
                  }
+                 // TODO: Implement bulk email sending here if needed
                  $app->status = 'sent';
                  $app->save();
             }
