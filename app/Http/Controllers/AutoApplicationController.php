@@ -153,7 +153,7 @@ class AutoApplicationController extends Controller
 
                     try {
                         $response = \Illuminate\Support\Facades\Http::withHeaders([
-                            'X-API-Key' => '59f9182403175d7a3769880df0d4e8459fd710d48582656ea3366ed4be987be6',
+                            'X-API-Key' => env('MAILEROO_API_KEY'),
                             'Content-Type' => 'application/json'
                         ])->post('https://smtp.maileroo.com/api/v2/emails', $payload);
 
