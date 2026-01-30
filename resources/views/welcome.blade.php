@@ -107,48 +107,42 @@
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         @forelse ($pendingApplications as $application)
-                                            <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap align-top">
+                                            <!-- Main Info Row -->
+                                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                                <td class="px-6 py-4 whitespace-nowrap align-middle">
                                                     <input type="checkbox" name="ids[]" value="{{ $application->id }}" class="application-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
-                                                    {{ $application->user->name }} <br>
-                                                    <span class="text-xs text-gray-500">{{ $application->user->email }}</span>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-middle">
+                                                    <div class="font-bold">{{ $application->user->name }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $application->user->email }}</div>
+                                                    @if($application->user->cv_url)
+                                                        <a href="{{ $application->user->cv_url }}" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-1 block">View CV</a>
+                                                    @endif
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
-                                                    {{ $application->trackedJob->job_title }}
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-middle">
+                                                    <div class="font-medium">{{ $application->trackedJob->job_title }}</div>
+                                                    <div class="text-xs text-gray-500">ID: {{ $application->trackedJob->provider_job_id }}</div>
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-middle">
                                                     {{ $application->trackedJob->provider }}
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
-                                                    {{ $application->trackedJob->provider_job_id }}
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap align-top">
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                <td class="px-6 py-4 whitespace-nowrap align-middle">
+                                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                         {{ $application->status }}
                                                     </span>
                                                 </td>
-                                                <td class="px-6 py-4 text-sm font-medium align-top">
-                                                    <div class="flex space-x-2 mb-2">
-                                                        @if($application->user->cv_url)
-                                                            <a href="{{ $application->user->cv_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">CV</a>
-                                                        @endif
-                                                        
-                                                        <button type="submit" name="action" value="send_{{ $application->id }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">Send</button>
-                                                        <button type="submit" name="action" value="fail_{{ $application->id }}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
-                                                    </div>
-
-                                                    <details class="text-xs text-gray-500 cursor-pointer">
-                                                        <summary class="hover:text-gray-700 dark:hover:text-gray-300">Edit Email</summary>
-                                                        <div class="mt-2 space-y-2">
-                                                            <div>
-                                                                <label class="block text-gray-700 dark:text-gray-300">Subject</label>
-                                                                <input type="text" name="applications[{{ $application->id }}][subject]" value="Candidatura - {{ $application->trackedJob->job_title }} - {{ $application->user->name }}" class="w-full text-xs rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600">
-                                                            </div>
-                                                            <div>
-                                                                <label class="block text-gray-700 dark:text-gray-300">Message</label>
-                                                                <textarea name="applications[{{ $application->id }}][message]" rows="4" class="w-full text-xs rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600">Prezados,
+                                            </tr>
+                                            <!-- Editing form Row -->
+                                            <tr>
+                                                <td colspan="5" class="px-6 pb-6 pt-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                                                     <div class="grid grid-cols-1 gap-4">
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                                                            <input type="text" name="applications[{{ $application->id }}][subject]" value="Candidatura - {{ $application->trackedJob->job_title }} - {{ $application->user->name }}" class="w-full p-2.5 text-sm rounded-lg border border-gray-300 bg-white placeholder-gray-400 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                                                            <textarea name="applications[{{ $application->id }}][message]" rows="6" class="w-full p-2.5 text-sm rounded-lg border border-gray-300 bg-white placeholder-gray-400 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm custom-scrollbar">Prezados,
 
 Gostaria de submeter meu currículo para análise referente à oportunidade descrita no assunto.
 
@@ -157,15 +151,26 @@ Segue em anexo o meu currículo com detalhes sobre minha trajetória profissiona
 Agradeço desde já a atenção e aguardo um retorno.
 
 Grato.</textarea>
-                                                            </div>
                                                         </div>
-                                                    </details>
+                                                        <div class="flex items-center justify-end space-x-4 mt-2">
+                                                             <button type="submit" name="action" value="fail_{{ $application->id }}" class="flex-1 sm:flex-none bg-white hover:bg-red-50 text-red-600 font-semibold py-2.5 px-6 border border-red-200 rounded-lg shadow-sm hover:shadow-md transition-all text-center">
+                                                                Delete
+                                                            </button>
+                                                            <button type="submit" name="action" value="send_{{ $application->id }}" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all text-center">
+                                                                Send Application
+                                                            </button>
+                                                        </div>
+                                                     </div>
                                                 </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
-                                                    No pending applications found.
+                                                <td colspan="5" class="px-6 py-10 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                                                    <div class="flex flex-col items-center justify-center">
+                                                        <svg class="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                        <span class="text-lg font-medium">No pending applications found.</span>
+                                                        <span class="text-sm mt-1">Great job! You're all caught up.</span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endforelse
