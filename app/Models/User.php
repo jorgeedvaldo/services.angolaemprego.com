@@ -55,7 +55,7 @@ class User extends Authenticatable
 
     public function getCvUrlAttribute()
     {
-        return $this->cv_path ? asset('storage/' . $this->cv_path) : null;
+        return $this->cv_path ? 'https://angolaemprego.com/storage/' . $this->cv_path : null;
     }
 
     public function hasActiveSubscription()
