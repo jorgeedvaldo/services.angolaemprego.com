@@ -116,7 +116,7 @@
                                                     <div class="font-bold">{{ $application->user->name }}</div>
                                                     <div class="text-xs text-gray-500">{{ $application->user->email }}</div>
                                                     @if($application->user->cv_url)
-                                                        <a href="{{ $application->user->cv_url }}" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-1 block">View CV</a>
+                                                        <a href="{{ 'https://angolaemprego.com/' . $application->user->cv_url }}" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-1 block">View CV</a>
                                                     @endif
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-middle">
