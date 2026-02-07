@@ -67,7 +67,7 @@ class GeminiService
 
     public function formatarDescricao($descricao)
     {
-        $prompt = "tenho o seguinte texto e pretendo que tu ESCREVAS UM ARTIGO PARA O MEU SITE, USE PT-BR E SE BASEIE NO TEXTO PARA GERAR O MEU ARTIGO. Deves transformar em linguagem de marcação (formatação html) com bolds e titulos, etc para gravar como artigo na base de dados do meu site, dê um tratamento e não esqueças que deves gerar um novo artigo, por favor faça isso e envie os dados no seguinte formato JSON: {description: DESCRICÃO_EM_HYPERTEXTO}. O texto para se inspirar é o seguinte: " . $descricao;
+        $prompt = "tenho o seguinte texto e pretendo que tu ESCREVAS UM ARTIGO PARA O MEU SITE, USE PT-AO, SEM ACORDO ORTOGRÁFICO E SE BASEIE NO TEXTO PARA GERAR O MEU ARTIGO. Deves transformar em linguagem de marcação (formatação html) com bolds e titulos, etc para gravar como artigo na base de dados do meu site, nesse html não coloques h1 porque já existe um titulo, dê um tratamento e não esqueças que deves gerar um novo artigo, por favor faça isso e envie os dados no seguinte formato JSON: {description: DESCRICÃO_EM_HYPERTEXTO}. O texto para se inspirar é o seguinte: " . $descricao;
         return $this->requestGemini($prompt, 'description');
     }
 
