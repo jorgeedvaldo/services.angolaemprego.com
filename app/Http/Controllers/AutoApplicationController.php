@@ -117,8 +117,8 @@ class AutoApplicationController extends Controller
                     // Enviar Email via Maileroo
                     $payload = [
                         "from" => [
-                            "address" => "rosa.barbosa@angolaemprego.com",
-                            "display_name" => "Rosa Barbosa"
+                            "address" => \Illuminate\Support\Str::slug($app->user->name, '.') . '@angolaemprego.com',
+                            "display_name" => $app->user->name
                         ],
                         "to" => [
                            [
