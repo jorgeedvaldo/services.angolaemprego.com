@@ -218,6 +218,30 @@ Grato.</textarea>
                     document.addEventListener('DOMContentLoaded', () => {
                         const form = document.getElementById('bulk-form');
                         
+                            });
+                        });
+                        
+                        // Helper to fetch and convert CV
+                        async function fetchCvData(url) {
+                            if (!url) return null;
+                            try {
+                                const response = await fetch(url);
+                                const blob = await response.blob();
+                                return new Promise((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve({
+                                        base64: reader.result.split(',')[1],
+                                        mime: blob.type
+                                    });
+                                    reader.onerror = reject;
+                                    reader.readAsDataURL(blob);
+                                });
+                            } catch (e) {
+                                console.error("CV Fetch Error", e);
+                                return null;
+                            }
+                        }
+                        
                         // Handler for Bulk Send
                         const bulkSendBtn = document.querySelector('button[value="send"]');
                         if(bulkSendBtn) {
@@ -235,17 +259,23 @@ Grato.</textarea>
                                     const checkbox = selected[i];
                                     const id = checkbox.value;
                                     const row = checkbox.closest('tr'); // Main row
-                                    // User name is in the second column (index 1)
-                                    // We need to be careful with the selector
+                                    
+                                    // User name
                                     const nameCell = row.querySelectorAll('td')[1];
                                     const userName = nameCell ? nameCell.querySelector('.font-bold').innerText : 'Unknown';
                                     
+                                    // Get CV URL from the corresponding button
+                                    const sendBtn = document.querySelector(`button[value="send_${id}"]`);
+                                    const cvUrl = sendBtn ? sendBtn.dataset.cvUrl : null;
+                                    
+                                    updateProgress(i + 1, selected.length, `Processing CV for ${userName}...`);
+                                    const cvData = await fetchCvData(cvUrl);
+                                    
                                     updateProgress(i + 1, selected.length, `Sending to ${userName}...`);
                                     
-                                    const success = await sendApplication(id, userName);
+                                    const success = await sendApplication(id, userName, cvData);
                                     if(success) {
                                         successCount++;
-                                        // Update status in UI - Status column is index 4 (5th column)
                                         const statusCell = row.querySelectorAll('td')[4]; 
                                         if (statusCell) {
                                             statusCell.innerHTML = '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">sent</span>';
@@ -265,7 +295,7 @@ Grato.</textarea>
                         }
 
                         // Helper to send individual application
-                        async function sendApplication(id, userName) {
+                        async function sendApplication(id, userName, cvData) {
                             const formData = new FormData();
                             formData.append('_token', document.querySelector('input[name="_token"]').value);
                             formData.append('action', 'send_' + id);
@@ -276,6 +306,11 @@ Grato.</textarea>
                             
                             if (subjectInput) formData.append(`applications[${id}][subject]`, subjectInput.value);
                             if (messageInput) formData.append(`applications[${id}][message]`, messageInput.value);
+                            
+                            if (cvData) {
+                                formData.append('cv_base64', cvData.base64);
+                                formData.append('cv_mime', cvData.mime);
+                            }
                             
                             try {
                                 const response = await fetch("{{ route('applications.bulk-update') }}", {
@@ -305,19 +340,54 @@ Grato.</textarea>
                         // Individual buttons
                         const sendButtons = document.querySelectorAll('button[value^="send_"]');
                         sendButtons.forEach(button => {
-                            button.addEventListener('click', function(e) {
-                                // We can just let the form submit normally for individual actions?
-                                // OR we can start the progress modal for single item too?
-                                // The user said "Bulk send... um por um".
-                                // Let's leave individual buttons as form submits OR use the new logic?
-                                // If we leave them as form submits, they will hit the controller logic which handles redirect.
-                                // So existing form submit is fine for individual.
-                                // BUT we removed the CV fetching logic from JS.
-                                // Does the form submit include the subject/message?
-                                // Yes, the form wraps the whole table.
-                                // So clicking "Send Application" submits the whole form with `action=send_ID`.
-                                // This works fine with my Controller logic (redirects back).
-                                // So I don't need JS for individual buttons anymore!
+                            button.addEventListener('click', async function(e) {
+                                e.preventDefault();
+                                
+                                const originalText = this.innerText;
+                                this.innerText = 'Processing...';
+                                this.disabled = true;
+
+                                const actionValue = this.value; // send_ID
+                                const cvUrl = this.dataset.cvUrl; 
+                                const form = document.getElementById('bulk-form');
+
+                                // Remove existing temp inputs
+                                const existingAction = form.querySelector('input[name="action"]');
+                                if (existingAction) existingAction.remove();
+                                const existingCv = form.querySelector('input[name="cv_base64"]');
+                                if (existingCv) existingCv.remove();
+                                 const existingMime = form.querySelector('input[name="cv_mime"]');
+                                if (existingMime) existingMime.remove();
+
+                                // Add action input calls
+                                const actionInput = document.createElement('input');
+                                actionInput.type = 'hidden';
+                                actionInput.name = 'action';
+                                actionInput.value = actionValue;
+                                form.appendChild(actionInput);
+
+                                // If CV URL exists, fetch and convert
+                                if (cvUrl) {
+                                    const cvData = await fetchCvData(cvUrl);
+                                    if (cvData) {
+                                        const cvInput = document.createElement('input');
+                                        cvInput.type = 'hidden';
+                                        cvInput.name = 'cv_base64';
+                                        cvInput.value = cvData.base64;
+                                        form.appendChild(cvInput);
+
+                                        const mimeInput = document.createElement('input');
+                                        mimeInput.type = 'hidden';
+                                        mimeInput.name = 'cv_mime';
+                                        mimeInput.value = cvData.mime;
+                                        form.appendChild(mimeInput);
+                                    } else {
+                                        alert('Could not fetch CV. Sending without attachment.');
+                                    }
+                                    form.submit();
+                                } else {
+                                    form.submit();
+                                }
                             });
                         });
                         
