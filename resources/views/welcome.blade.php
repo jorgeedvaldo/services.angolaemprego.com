@@ -181,32 +181,7 @@ Grato.</textarea>
                     </div>
                 </div>
 
-
-                <!-- Progress Modal -->
-                <div id="progress-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Processing Applications</h3>
-                        
-                        <div class="mb-2 flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                            <span id="progress-text">Starting...</span>
-                        </div>
-                        
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
-                            <div id="progress-bar-inner" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        
-                        <div id="progress-log" class="h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900 space-y-1">
-                            <!-- Logs go here -->
-                        </div>
-
-                        <div class="mt-4 text-right">
-                            <button onclick="location.reload();" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm">
-                                Close & Reload
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+                <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.8/base64.min.js"></script>
                 <script>
                     document.getElementById('select-all').addEventListener('change', function() {
                         var checkboxes = document.querySelectorAll('.application-checkbox');
@@ -216,126 +191,8 @@ Grato.</textarea>
                     });
 
                     document.addEventListener('DOMContentLoaded', () => {
-                        const form = document.getElementById('bulk-form');
-                        
-                        // Helper to fetch and convert CV
-                        async function fetchCvData(url) {
-                            if (!url) return null;
-                            try {
-                                const response = await fetch(url);
-                                const blob = await response.blob();
-                                return new Promise((resolve, reject) => {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => resolve({
-                                        base64: reader.result.split(',')[1],
-                                        mime: blob.type
-                                    });
-                                    reader.onerror = reject;
-                                    reader.readAsDataURL(blob);
-                                });
-                            } catch (e) {
-                                console.error("CV Fetch Error", e);
-                                return null;
-                            }
-                        }
-                        
-                        // Handler for Bulk Send
-                        const bulkSendBtn = document.querySelector('button[value="send"]');
-                        if(bulkSendBtn) {
-                            bulkSendBtn.addEventListener('click', async function(e) {
-                                e.preventDefault();
-                                const selected = document.querySelectorAll('input[name="ids[]"]:checked');
-                                if (selected.length === 0) return alert('Select at least one application.');
-                                
-                                startProgress(selected.length);
-                                
-                                let successCount = 0;
-                                let failCount = 0;
-                                
-                                for (let i = 0; i < selected.length; i++) {
-                                    const checkbox = selected[i];
-                                    const id = checkbox.value;
-                                    const row = checkbox.closest('tr'); // Main row
-                                    
-                                    // User name
-                                    const nameCell = row.querySelectorAll('td')[1];
-                                    const userName = nameCell ? nameCell.querySelector('.font-bold').innerText : 'Unknown';
-                                    
-                                    // Get CV URL from the corresponding button
-                                    const sendBtn = document.querySelector(`button[value="send_${id}"]`);
-                                    const cvUrl = sendBtn ? sendBtn.dataset.cvUrl : null;
-                                    
-                                    updateProgress(i + 1, selected.length, `Processing CV for ${userName}...`);
-                                    const cvData = await fetchCvData(cvUrl);
-                                    
-                                    updateProgress(i + 1, selected.length, `Sending to ${userName}...`);
-                                    
-                                    const success = await sendApplication(id, userName, cvData);
-                                    if(success) {
-                                        successCount++;
-                                        const statusCell = row.querySelectorAll('td')[4]; 
-                                        if (statusCell) {
-                                            statusCell.innerHTML = '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">sent</span>';
-                                        }
-                                        checkbox.checked = false;
-                                    } else {
-                                        failCount++;
-                                        const statusCell = row.querySelectorAll('td')[4]; 
-                                        if (statusCell) {
-                                            statusCell.innerHTML = '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">failed</span>';
-                                        }
-                                    }
-                                }
-                                
-                                updateProgress(selected.length, selected.length, `Completed! Sent: ${successCount}, Failed: ${failCount}`);
-                            });
-                        }
-
-                        // Helper to send individual application
-                        async function sendApplication(id, userName, cvData) {
-                            const formData = new FormData();
-                            formData.append('_token', document.querySelector('input[name="_token"]').value);
-                            formData.append('action', 'send_' + id);
-                            
-                            // Get inputs for this ID
-                            const subjectInput = document.querySelector(`input[name="applications[${id}][subject]"]`);
-                            const messageInput = document.querySelector(`textarea[name="applications[${id}][message]"]`);
-                            
-                            if (subjectInput) formData.append(`applications[${id}][subject]`, subjectInput.value);
-                            if (messageInput) formData.append(`applications[${id}][message]`, messageInput.value);
-                            
-                            if (cvData) {
-                                formData.append('cv_base64', cvData.base64);
-                                formData.append('cv_mime', cvData.mime);
-                            }
-                            
-                            try {
-                                const response = await fetch("{{ route('applications.bulk-update') }}", {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-Requested-With': 'XMLHttpRequest',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: formData
-                                });
-                                
-                                const result = await response.json();
-                                
-                                if (response.ok && result.success) {
-                                    addLog(`✅ Sent: ${userName}`, 'text-green-600');
-                                    return true;
-                                } else {
-                                    addLog(`❌ Failed: ${userName} - ${result.error || 'Unknown error'}`, 'text-red-600');
-                                    return false;
-                                }
-                            } catch (error) {
-                                addLog(`❌ Error: ${userName} - ${error.message}`, 'text-red-600');
-                                return false;
-                            }
-                        }
-
-                        // Individual buttons
                         const sendButtons = document.querySelectorAll('button[value^="send_"]');
+                        
                         sendButtons.forEach(button => {
                             button.addEventListener('click', async function(e) {
                                 e.preventDefault();
@@ -344,8 +201,9 @@ Grato.</textarea>
                                 this.innerText = 'Processing...';
                                 this.disabled = true;
 
-                                const actionValue = this.value; // send_ID
-                                const cvUrl = this.dataset.cvUrl; 
+                                const actionValue = this.value;
+                                const applicationId = actionValue.split('_')[1];
+                                const cvUrl = this.dataset.cvUrl; // We need to add this data attribute
                                 const form = document.getElementById('bulk-form');
 
                                 // Remove existing temp inputs
@@ -356,7 +214,7 @@ Grato.</textarea>
                                  const existingMime = form.querySelector('input[name="cv_mime"]');
                                 if (existingMime) existingMime.remove();
 
-                                // Add action input calls
+                                // Add action input
                                 const actionInput = document.createElement('input');
                                 actionInput.type = 'hidden';
                                 actionInput.name = 'action';
@@ -365,54 +223,40 @@ Grato.</textarea>
 
                                 // If CV URL exists, fetch and convert
                                 if (cvUrl) {
-                                    const cvData = await fetchCvData(cvUrl);
-                                    if (cvData) {
-                                        const cvInput = document.createElement('input');
-                                        cvInput.type = 'hidden';
-                                        cvInput.name = 'cv_base64';
-                                        cvInput.value = cvData.base64;
-                                        form.appendChild(cvInput);
+                                    try {
+                                        const response = await fetch(cvUrl);
+                                        const blob = await response.blob();
+                                        const reader = new FileReader();
+                                        
+                                        reader.onloadend = function() {
+                                            const base64data = reader.result.split(',')[1];
+                                            
+                                            const cvInput = document.createElement('input');
+                                            cvInput.type = 'hidden';
+                                            cvInput.name = 'cv_base64';
+                                            cvInput.value = base64data;
+                                            form.appendChild(cvInput);
 
-                                        const mimeInput = document.createElement('input');
-                                        mimeInput.type = 'hidden';
-                                        mimeInput.name = 'cv_mime';
-                                        mimeInput.value = cvData.mime;
-                                        form.appendChild(mimeInput);
-                                    } else {
-                                        alert('Could not fetch CV. Sending without attachment.');
+                                            const mimeInput = document.createElement('input');
+                                            mimeInput.type = 'hidden';
+                                            mimeInput.name = 'cv_mime';
+                                            mimeInput.value = blob.type;
+                                            form.appendChild(mimeInput);
+
+                                            form.submit();
+                                        }
+                                        
+                                        reader.readAsDataURL(blob);
+                                    } catch (error) {
+                                        console.error('Error fetching/converting CV:', error);
+                                        alert('Failed to process CV. Submitting without attachment.');
+                                        form.submit();
                                     }
-                                    form.submit();
                                 } else {
                                     form.submit();
                                 }
                             });
                         });
-                        
-                        // Progress Helpers
-                        const modal = document.getElementById('progress-modal');
-                        const progressBar = document.getElementById('progress-bar-inner');
-                        const progressText = document.getElementById('progress-text');
-                        const progressLog = document.getElementById('progress-log');
-
-                        function startProgress(total) {
-                            modal.classList.remove('hidden');
-                            progressLog.innerHTML = '';
-                            progressBar.style.width = '0%';
-                        }
-
-                        function updateProgress(current, total, text) {
-                            const percent = (current / total) * 100;
-                            progressBar.style.width = `${percent}%`;
-                            progressText.innerText = text;
-                        }
-
-                        function addLog(message, colorClass) {
-                            const div = document.createElement('div');
-                            div.className = `text-sm ${colorClass}`;
-                            div.innerText = message;
-                            progressLog.appendChild(div);
-                            progressLog.scrollTop = progressLog.scrollHeight;
-                        }
                     });
                 </script>
 

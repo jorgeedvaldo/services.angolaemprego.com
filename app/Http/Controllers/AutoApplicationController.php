@@ -108,36 +108,74 @@ class AutoApplicationController extends Controller
             if ($app) {
                 // Se for envio, vamos guardar o Assunto e Mensagem personalizados e enviar o email
                 if ($type === 'send') {
-                    $subject = null;
-                    $message = null;
                     if ($request->has("applications.{$id}")) {
                         $data = $request->input("applications.{$id}");
-                        $subject = $data['subject'] ?? null;
-                        $message = $data['message'] ?? null;
+                        $app->subject = $data['subject'] ?? null;
+                        $app->message = $data['message'] ?? null;
+                    }
+                    
+                    // Enviar Email via Maileroo
+                    $payload = [
+                        "from" => [
+                            "address" => \Illuminate\Support\Str::slug($app->user->name, '.') . '@angolaemprego.com',
+                            "display_name" => $app->user->name
+                        ],
+                        "to" => [
+                           [
+                               "address" => $app->trackedJob->apply_email
+                           ]
+                        ],
+                        "cc" => [
+                            "address" => $app->user->email,
+                             "display_name" => $app->user->name
+                        ],
+                        "subject" => $app->subject ?? "Candidatura - {$app->trackedJob->job_title}",
+                        "html" => nl2br($app->message ?? "Prezados,\n\nGostaria de submeter a minha candidatura."),
+                        "tracking" => true
+                    ];
+
+                    // Adicionar anexo se existir
+                    if ($request->has('cv_base64')) {
+                        $base64Content = $request->input('cv_base64');
+                        $mimeType = $request->input('cv_mime', 'application/pdf');
+                        
+                        // Validar se é base64 válido (opcional, mas bom)
+                        // Apenas adicionar ao payload
+                        $payload['attachments'] = [
+                            [
+                                "file_name" => "Curriculo_" . \Illuminate\Support\Str::slug($app->user->name) . ".pdf", // Assumindo PDF ou usar extensão correta se possível
+                                "content_type" => $mimeType,
+                                "content" => $base64Content,
+                                "inline" => false
+                            ]
+                        ];
                     }
 
-                    $cvBase64 = $request->input('cv_base64');
-                    $cvMime = $request->input('cv_mime', 'application/pdf');
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::withHeaders([
+                            'X-API-Key' => env('MAILEROO_API_KEY'),
+                            'Content-Type' => 'application/json'
+                        ])->post('https://smtp.maileroo.com/api/v2/emails', $payload);
 
-                    $result = $this->sendEmail($app, $subject, $message, $cvBase64, $cvMime);
-
-                    if ($result['success']) {
-                        if ($request->wantsJson()) {
-                            return response()->json(['success' => true, 'message' => 'Application sent successfully via Maileroo.']);
+                        if ($response->successful()) {
+                            $app->status = 'sent';
+                            $app->save();
+                            return redirect()->back()->with('success', 'Application sent successfully via Maileroo.');
+                        } else {
+                            $app->error_message = $response->body();
+                            $app->status = 'failed';
+                            $app->save();
+                            return redirect()->back()->with('error', 'Failed to send email: ' . $response->body());
                         }
-                        return redirect()->back()->with('success', 'Application sent successfully via Maileroo.');
-                    } else {
-                        if ($request->wantsJson()) {
-                            return response()->json(['success' => false, 'error' => $result['error']], 500);
-                        }
-                        return redirect()->back()->with('error', 'Failed to send email: ' . $result['error']);
+                    } catch (\Exception $e) {
+                         $app->error_message = $e->getMessage();
+                         $app->status = 'failed';
+                         $app->save();
+                         return redirect()->back()->with('error', 'Exception sending email: ' . $e->getMessage());
                     }
                 } elseif ($type === 'fail') {
                     $app->status = 'failed';
                     $app->save();
-                    if ($request->wantsJson()) {
-                        return response()->json(['success' => true, 'message' => 'Application marked as failed.']);
-                    }
                     return redirect()->back()->with('success', 'Application marked as failed.');
                 }
             }
@@ -173,80 +211,5 @@ class AutoApplicationController extends Controller
         }
 
         return redirect()->back()->with('success', 'Selected applications updated.');
-    }
-
-    private function sendEmail(AutoApplication $app, $subject = null, $message = null, $cvBase64 = null, $cvMime = 'application/pdf')
-    {
-        // Atualizar assunto/mensagem no modelo antes de enviar, se fornecidos
-        if ($subject) $app->subject = $subject;
-        if ($message) $app->message = $message;
-        
-        // Se CV não fornecido via argumento (ex: bulk send), tentar obter do perfil do usuário
-        if (!$cvBase64 && $app->user->cv_path) {
-            try {
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($app->user->cv_path)) {
-                    $fileContent = \Illuminate\Support\Facades\Storage::disk('public')->get($app->user->cv_path);
-                    $cvBase64 = base64_encode($fileContent);
-                    $cvMime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($app->user->cv_path);
-                }
-            } catch (\Exception $e) {
-                // Log failure to read CV
-            }
-        }
-
-        // Enviar Email via Maileroo
-        $payload = [
-            "from" => [
-                "address" => \Illuminate\Support\Str::slug($app->user->name, '.') . '@angolaemprego.com',
-                "display_name" => $app->user->name
-            ],
-            "to" => [
-               [
-                   "address" => $app->trackedJob->apply_email
-               ]
-            ],
-            "cc" => [
-                "address" => $app->user->email,
-                 "display_name" => $app->user->name
-            ],
-            "subject" => $app->subject ?? "Candidatura - {$app->trackedJob->job_title}",
-            "html" => nl2br($app->message ?? "Prezados,\n\nGostaria de submeter a minha candidatura."),
-            "tracking" => true
-        ];
-
-        // Adicionar anexo se existir
-        if ($cvBase64) {
-            $payload['attachments'] = [
-                [
-                    "file_name" => "Curriculo_" . \Illuminate\Support\Str::slug($app->user->name) . ".pdf", 
-                    "content_type" => $cvMime,
-                    "content" => $cvBase64,
-                    "inline" => false
-                ]
-            ];
-        }
-
-        try {
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-API-Key' => env('MAILEROO_API_KEY'),
-                'Content-Type' => 'application/json'
-            ])->post('https://smtp.maileroo.com/api/v2/emails', $payload);
-
-            if ($response->successful()) {
-                $app->status = 'sent';
-                $app->save();
-                return ['success' => true];
-            } else {
-                $app->error_message = $response->body();
-                $app->status = 'failed';
-                $app->save();
-                return ['success' => false, 'error' => $response->body()];
-            }
-        } catch (\Exception $e) {
-             $app->error_message = $e->getMessage();
-             $app->status = 'failed';
-             $app->save();
-             return ['success' => false, 'error' => $e->getMessage()];
-        }
     }
 }
