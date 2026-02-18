@@ -181,7 +181,32 @@ Grato.</textarea>
                     </div>
                 </div>
 
-                <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.8/base64.min.js"></script>
+
+                <!-- Progress Modal -->
+                <div id="progress-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Processing Applications</h3>
+                        
+                        <div class="mb-2 flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                            <span id="progress-text">Starting...</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                            <div id="progress-bar-inner" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="progress-log" class="h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900 space-y-1">
+                            <!-- Logs go here -->
+                        </div>
+
+                        <div class="mt-4 text-right">
+                            <button onclick="location.reload();" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm">
+                                Close & Reload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <script>
                     document.getElementById('select-all').addEventListener('change', function() {
                         var checkboxes = document.querySelectorAll('.application-checkbox');
@@ -191,72 +216,136 @@ Grato.</textarea>
                     });
 
                     document.addEventListener('DOMContentLoaded', () => {
-                        const sendButtons = document.querySelectorAll('button[value^="send_"]');
+                        const form = document.getElementById('bulk-form');
                         
-                        sendButtons.forEach(button => {
-                            button.addEventListener('click', async function(e) {
+                        // Handler for Bulk Send
+                        const bulkSendBtn = document.querySelector('button[value="send"]');
+                        if(bulkSendBtn) {
+                            bulkSendBtn.addEventListener('click', async function(e) {
                                 e.preventDefault();
+                                const selected = document.querySelectorAll('input[name="ids[]"]:checked');
+                                if (selected.length === 0) return alert('Select at least one application.');
                                 
-                                const originalText = this.innerText;
-                                this.innerText = 'Processing...';
-                                this.disabled = true;
-
-                                const actionValue = this.value;
-                                const applicationId = actionValue.split('_')[1];
-                                const cvUrl = this.dataset.cvUrl; // We need to add this data attribute
-                                const form = document.getElementById('bulk-form');
-
-                                // Remove existing temp inputs
-                                const existingAction = form.querySelector('input[name="action"]');
-                                if (existingAction) existingAction.remove();
-                                const existingCv = form.querySelector('input[name="cv_base64"]');
-                                if (existingCv) existingCv.remove();
-                                 const existingMime = form.querySelector('input[name="cv_mime"]');
-                                if (existingMime) existingMime.remove();
-
-                                // Add action input
-                                const actionInput = document.createElement('input');
-                                actionInput.type = 'hidden';
-                                actionInput.name = 'action';
-                                actionInput.value = actionValue;
-                                form.appendChild(actionInput);
-
-                                // If CV URL exists, fetch and convert
-                                if (cvUrl) {
-                                    try {
-                                        const response = await fetch(cvUrl);
-                                        const blob = await response.blob();
-                                        const reader = new FileReader();
-                                        
-                                        reader.onloadend = function() {
-                                            const base64data = reader.result.split(',')[1];
-                                            
-                                            const cvInput = document.createElement('input');
-                                            cvInput.type = 'hidden';
-                                            cvInput.name = 'cv_base64';
-                                            cvInput.value = base64data;
-                                            form.appendChild(cvInput);
-
-                                            const mimeInput = document.createElement('input');
-                                            mimeInput.type = 'hidden';
-                                            mimeInput.name = 'cv_mime';
-                                            mimeInput.value = blob.type;
-                                            form.appendChild(mimeInput);
-
-                                            form.submit();
+                                startProgress(selected.length);
+                                
+                                let successCount = 0;
+                                let failCount = 0;
+                                
+                                for (let i = 0; i < selected.length; i++) {
+                                    const checkbox = selected[i];
+                                    const id = checkbox.value;
+                                    const row = checkbox.closest('tr'); // Main row
+                                    // User name is in the second column (index 1)
+                                    // We need to be careful with the selector
+                                    const nameCell = row.querySelectorAll('td')[1];
+                                    const userName = nameCell ? nameCell.querySelector('.font-bold').innerText : 'Unknown';
+                                    
+                                    updateProgress(i + 1, selected.length, `Sending to ${userName}...`);
+                                    
+                                    const success = await sendApplication(id, userName);
+                                    if(success) {
+                                        successCount++;
+                                        // Update status in UI - Status column is index 4 (5th column)
+                                        const statusCell = row.querySelectorAll('td')[4]; 
+                                        if (statusCell) {
+                                            statusCell.innerHTML = '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">sent</span>';
                                         }
-                                        
-                                        reader.readAsDataURL(blob);
-                                    } catch (error) {
-                                        console.error('Error fetching/converting CV:', error);
-                                        alert('Failed to process CV. Submitting without attachment.');
-                                        form.submit();
+                                        checkbox.checked = false;
+                                    } else {
+                                        failCount++;
+                                        const statusCell = row.querySelectorAll('td')[4]; 
+                                        if (statusCell) {
+                                            statusCell.innerHTML = '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">failed</span>';
+                                        }
                                     }
-                                } else {
-                                    form.submit();
                                 }
+                                
+                                updateProgress(selected.length, selected.length, `Completed! Sent: ${successCount}, Failed: ${failCount}`);
+                            });
+                        }
+
+                        // Helper to send individual application
+                        async function sendApplication(id, userName) {
+                            const formData = new FormData();
+                            formData.append('_token', document.querySelector('input[name="_token"]').value);
+                            formData.append('action', 'send_' + id);
+                            
+                            // Get inputs for this ID
+                            const subjectInput = document.querySelector(`input[name="applications[${id}][subject]"]`);
+                            const messageInput = document.querySelector(`textarea[name="applications[${id}][message]"]`);
+                            
+                            if (subjectInput) formData.append(`applications[${id}][subject]`, subjectInput.value);
+                            if (messageInput) formData.append(`applications[${id}][message]`, messageInput.value);
+                            
+                            try {
+                                const response = await fetch("{{ route('applications.bulk-update') }}", {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: formData
+                                });
+                                
+                                const result = await response.json();
+                                
+                                if (response.ok && result.success) {
+                                    addLog(`✅ Sent: ${userName}`, 'text-green-600');
+                                    return true;
+                                } else {
+                                    addLog(`❌ Failed: ${userName} - ${result.error || 'Unknown error'}`, 'text-red-600');
+                                    return false;
+                                }
+                            } catch (error) {
+                                addLog(`❌ Error: ${userName} - ${error.message}`, 'text-red-600');
+                                return false;
+                            }
+                        }
+
+                        // Individual buttons
+                        const sendButtons = document.querySelectorAll('button[value^="send_"]');
+                        sendButtons.forEach(button => {
+                            button.addEventListener('click', function(e) {
+                                // We can just let the form submit normally for individual actions?
+                                // OR we can start the progress modal for single item too?
+                                // The user said "Bulk send... um por um".
+                                // Let's leave individual buttons as form submits OR use the new logic?
+                                // If we leave them as form submits, they will hit the controller logic which handles redirect.
+                                // So existing form submit is fine for individual.
+                                // BUT we removed the CV fetching logic from JS.
+                                // Does the form submit include the subject/message?
+                                // Yes, the form wraps the whole table.
+                                // So clicking "Send Application" submits the whole form with `action=send_ID`.
+                                // This works fine with my Controller logic (redirects back).
+                                // So I don't need JS for individual buttons anymore!
                             });
                         });
+                        
+                        // Progress Helpers
+                        const modal = document.getElementById('progress-modal');
+                        const progressBar = document.getElementById('progress-bar-inner');
+                        const progressText = document.getElementById('progress-text');
+                        const progressLog = document.getElementById('progress-log');
+
+                        function startProgress(total) {
+                            modal.classList.remove('hidden');
+                            progressLog.innerHTML = '';
+                            progressBar.style.width = '0%';
+                        }
+
+                        function updateProgress(current, total, text) {
+                            const percent = (current / total) * 100;
+                            progressBar.style.width = `${percent}%`;
+                            progressText.innerText = text;
+                        }
+
+                        function addLog(message, colorClass) {
+                            const div = document.createElement('div');
+                            div.className = `text-sm ${colorClass}`;
+                            div.innerText = message;
+                            progressLog.appendChild(div);
+                            progressLog.scrollTop = progressLog.scrollHeight;
+                        }
                     });
                 </script>
 
