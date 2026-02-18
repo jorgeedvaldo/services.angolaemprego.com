@@ -218,9 +218,6 @@ Grato.</textarea>
                     document.addEventListener('DOMContentLoaded', () => {
                         const form = document.getElementById('bulk-form');
                         
-                            });
-                        });
-                        
                         // Helper to fetch and convert CV
                         async function fetchCvData(url) {
                             if (!url) return null;
