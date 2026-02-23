@@ -28,6 +28,11 @@ class AutoApplicationController extends Controller
             $matchesCount = 0;
 
             foreach ($jobs as $jobData) {
+                // Apenas processar vagas onde o email_or_link é um email válido
+                if (empty($jobData['email_or_link']) || !filter_var($jobData['email_or_link'], FILTER_VALIDATE_EMAIL)) {
+                    continue;
+                }
+
                 // Normalizar categorias do emprego (usando o nome)
                 $jobCategoryNames = collect($jobData['categories'])->pluck('name')->map(fn($name) => strtolower(trim($name)))->all();
 
