@@ -257,6 +257,16 @@ Grato.</textarea>
                                 }
                             });
                         });
+
+                        @if(isset($autoSend) && $autoSend)
+                        // Trigger the first application send automatically
+                        setTimeout(() => {
+                            const firstSendButton = document.querySelector('button[value^="send_"]');
+                            if (firstSendButton) {
+                                firstSendButton.click();
+                            }
+                        }, 500); // Small delay to allow visual feedback before submission
+                        @endif
                     });
                 </script>
 

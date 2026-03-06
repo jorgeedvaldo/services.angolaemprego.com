@@ -27,6 +27,14 @@ Route::get('/', function () {
     return view('welcome', compact('pendingApplications'));
 });
 
+Route::get('/send', function () {
+    $pendingApplications = \App\Models\AutoApplication::where('status', 'pending')
+        ->with(['user', 'trackedJob'])
+        ->get();
+
+    return view('welcome', compact('pendingApplications'))->with('autoSend', true);
+});
+
 Route::get('/ObterAngolaEmpregoAngoEmprego', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
 Route::get('/ObterAngolaEmpregoAngoEmprego/{website}', [LinkController::class, 'ObterAngolaEmpregoAngoEmprego']);
 Route::get('/Obter/{website}', [JobController::class, 'fetchFromWebsite']);
