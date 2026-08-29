@@ -261,7 +261,7 @@ class LinkController extends Controller
 	
 	function TituloViaGemini(){
         $api_key = config('services.geminiapi.token'); // SUBSTITUÍDO
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
         $client = new Client();
 
         $response = $client->post($url, [
@@ -289,7 +289,7 @@ class LinkController extends Controller
     
     function DescricaoVagaViaGemini($Descricao){
         $api_key = config('services.geminiapi.token'); // SUBSTITUÍDO
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
         $client = new Client();
 
         $response = $client->request('POST', $url, ['verify' => false,
@@ -318,7 +318,7 @@ class LinkController extends Controller
     
     function TituloVagaViaGemini($TituloAntigo = 'Administrador'){
         $api_key = config('services.geminiapi.token'); // SUBSTITUÍDO
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
         $client = new Client();
 
         $response = $client->request('POST', $url, ['verify' => false,
@@ -347,7 +347,7 @@ class LinkController extends Controller
     
     function GetOnContent($Content){
         $api_key = config('services.geminiapi.token'); // SUBSTITUÍDO
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
         $client = new Client();
 
         $response = $client->request('POST', $url, ['verify' => false,
