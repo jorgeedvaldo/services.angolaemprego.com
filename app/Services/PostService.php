@@ -59,7 +59,7 @@ class PostService
             $savedPost = $this->createPost([
                 'title' => $title,
                 'description' => $description,
-                'image' => 'images/posts/default.png',
+                //'image' => 'images/posts/default.png',
             ]);
 
             if (!$savedPost) {
