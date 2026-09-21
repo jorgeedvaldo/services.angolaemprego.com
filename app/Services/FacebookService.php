@@ -25,4 +25,18 @@ class FacebookService
             ]
         ]);
     }
+
+    /**
+     * Publica uma foto com a legenda (usado nas vagas do Brasil)
+     */
+    public function postImage(string $message, string $imageUrl)
+    {
+        return $this->http->post('https://graph.facebook.com/v18.0/me/photos', [
+            'form_params' => [
+                'url' => $imageUrl,
+                'caption' => $message,
+                'access_token' => $this->token,
+            ]
+        ]);
+    }
 }

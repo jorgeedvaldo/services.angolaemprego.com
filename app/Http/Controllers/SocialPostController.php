@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\LinkedinController;
 use App\Models\Job;
@@ -10,6 +12,17 @@ use App\Models\SocialMediaJob;
 
 class SocialPostController extends Controller
 {
+    /**
+     * Identificação das vagas do Brasil (country_id = 2, "br").
+     */
+    protected const BRAZIL_COUNTRY_ID = 2;
+    protected const BRAZIL_COUNTRY_CODES = ['br', 'bra', 'brasil', 'brazil'];
+
+    /**
+     * O LinkedIn rejeita comentários com mais de 3000 caracteres.
+     */
+    protected const LINKEDIN_MAX_LENGTH = 2900;
+
     protected FacebookController $facebookController;
     protected LinkedinController $linkedInController;
 
@@ -23,7 +36,13 @@ class SocialPostController extends Controller
 
     public function postToSocialMedia(Job $job)
     {
-        $link    = "https://www.angolaemprego.com/vagas/" . $job->slug;
+        $link = $this->portalUrl() . "/vagas/" . $job->slug;
+
+        // Vagas do Brasil: publicar a descrição completa com a imagem
+        if ($this->isBrazilJob($job)) {
+            return $this->postBrazilJobToSocialMedia($job, $link);
+        }
+
         $message = $job->title . "\n.\nMais detalhes aqui: " . $link . "\n.";
 
         // Post to Facebook
@@ -37,6 +56,147 @@ class SocialPostController extends Controller
         }
 
         return response()->json(['status' => 'Posts submitted']);
+    }
+
+    /**
+     * Publica uma vaga do Brasil: descrição completa acompanhada da imagem da vaga.
+     */
+    protected function postBrazilJobToSocialMedia(Job $job, string $link)
+    {
+        $imageUrl   = $this->jobImageUrl($job);
+        $imagePath  = $imageUrl ? $this->downloadImage($imageUrl) : null;
+
+        try {
+            // Post to Facebook
+            try {
+                if ($imageUrl) {
+                    $this->facebookController->postImage($this->buildFullMessage($job, $link), $imageUrl);
+                } else {
+                    $this->facebookController->post($this->buildFullMessage($job, $link), $link);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao publicar a vaga do Brasil no Facebook: ' . $e->getMessage());
+            }
+
+            // Post to LinkedIn
+            try {
+                $message = $this->buildFullMessage($job, $link, self::LINKEDIN_MAX_LENGTH);
+
+                if ($imagePath) {
+                    $this->linkedInController->publishImage($message, $imagePath);
+                } else {
+                    $this->linkedInController->publishLink($message, $link);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao publicar a vaga do Brasil no LinkedIn: ' . $e->getMessage());
+            }
+        } finally {
+            if ($imagePath && file_exists($imagePath)) {
+                @unlink($imagePath);
+            }
+        }
+
+        return response()->json(['status' => 'Posts submitted']);
+    }
+
+    /**
+     * Verifica se a vaga pertence ao Brasil (country_id = 2, "br").
+     */
+    protected function isBrazilJob(Job $job): bool
+    {
+        if ((int) $job->country_id === self::BRAZIL_COUNTRY_ID) {
+            return true;
+        }
+
+        foreach (['country_code', 'country'] as $attribute) {
+            $value = $job->{$attribute};
+
+            if (is_string($value) && in_array(strtolower(trim($value)), self::BRAZIL_COUNTRY_CODES, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Monta a mensagem com o título, a descrição completa e o link da vaga.
+     * Quando $maxLength é informado, apenas a descrição é encurtada para o link
+     * se manter na publicação.
+     */
+    protected function buildFullMessage(Job $job, string $link, int $maxLength = null): string
+    {
+        $header      = $job->title . "\n.\n";
+        $footer      = "\n.\nMais detalhes aqui: " . $link . "\n.";
+        $description = trim($this->LimparDescricao($job->description));
+
+        if ($maxLength !== null) {
+            $available = max($maxLength - mb_strlen($header) - mb_strlen($footer), 0);
+
+            if (mb_strlen($description) > $available) {
+                $description = rtrim(mb_substr($description, 0, max($available - 3, 0))) . '...';
+            }
+        }
+
+        return $header . $description . $footer;
+    }
+
+    /**
+     * URL absoluta da imagem da vaga, ou null quando a vaga não tem imagem.
+     */
+    protected function jobImageUrl(Job $job): ?string
+    {
+        $image = trim((string) $job->image);
+
+        if ($image === '') {
+            return null;
+        }
+
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+            return $image;
+        }
+
+        return rtrim($this->portalStorageUrl(), '/') . '/' . ltrim($image, '/');
+    }
+
+    /**
+     * Descarrega a imagem para um ficheiro temporário — o upload do LinkedIn
+     * precisa de um ficheiro local. Devolve null se o download falhar.
+     */
+    protected function downloadImage(string $imageUrl): ?string
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'job_image_');
+
+        if ($tempPath === false) {
+            return null;
+        }
+
+        try {
+            $client = new Client();
+            $client->get($imageUrl, ['verify' => false, 'sink' => $tempPath]);
+
+            clearstatcache(true, $tempPath);
+
+            if (filesize($tempPath) > 0) {
+                return $tempPath;
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao descarregar a imagem da vaga: ' . $e->getMessage());
+        }
+
+        @unlink($tempPath);
+
+        return null;
+    }
+
+    protected function portalUrl(): string
+    {
+        return rtrim(config('services.portal.url', 'https://www.angolaemprego.com'), '/');
+    }
+
+    protected function portalStorageUrl(): string
+    {
+        return rtrim(config('services.portal.storage_url', 'https://angolaemprego.com/storage'), '/');
     }
 
     public function postLastToMedia()

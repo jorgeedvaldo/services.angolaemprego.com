@@ -114,6 +114,7 @@ class LinkedinController extends Controller
         try {
             // 1. Register upload
             $registerResponse = $this->client->post('https://api.linkedin.com/v2/assets?action=registerUpload', [
+                'verify' => false,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->accessToken,
                     'Content-Type'  => 'application/json',
@@ -137,6 +138,7 @@ class LinkedinController extends Controller
 
             // 2. Upload binary file
             $this->client->put($uploadUrl, [
+                'verify' => false,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->accessToken,
                     'Content-Type'  => mime_content_type($imagePath),
