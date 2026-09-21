@@ -17,9 +17,4 @@ class FacebookController extends Controller
     {
         $this->facebookService->post($message, $link);
     }
-
-    public function postImage(string $message, string $imageUrl)
-    {
-        $this->facebookService->postImage($message, $imageUrl);
-    }
 }

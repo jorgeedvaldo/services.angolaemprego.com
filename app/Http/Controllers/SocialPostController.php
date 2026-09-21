@@ -36,20 +36,17 @@ class SocialPostController extends Controller
 
     public function postToSocialMedia(Job $job)
     {
-        $link = $this->portalUrl() . "/vagas/" . $job->slug;
-
-        // Vagas do Brasil: publicar a descrição completa com a imagem
-        if ($this->isBrazilJob($job)) {
-            return $this->postBrazilJobToSocialMedia($job, $link);
-        }
-
+        $link    = $this->portalUrl() . "/vagas/" . $job->slug;
         $message = $job->title . "\n.\nMais detalhes aqui: " . $link . "\n.";
 
         // Post to Facebook
         $this->facebookController->post($message, $link);
 
         // Post to LinkedIn
-        if ($link) {
+        if ($this->isBrazilJob($job)) {
+            // Vagas do Brasil: descrição completa com a imagem da vaga
+            $this->publishBrazilJobToLinkedIn($job, $link);
+        } elseif ($link) {
             $this->linkedInController->publishLink($message, $link);
         } else {
             $this->linkedInController->publishText($message);
@@ -59,44 +56,28 @@ class SocialPostController extends Controller
     }
 
     /**
-     * Publica uma vaga do Brasil: descrição completa acompanhada da imagem da vaga.
+     * Publica no LinkedIn uma vaga do Brasil: descrição completa acompanhada
+     * da imagem da vaga. Sem imagem, publica na mesma com o link.
      */
-    protected function postBrazilJobToSocialMedia(Job $job, string $link)
+    protected function publishBrazilJobToLinkedIn(Job $job, string $link): void
     {
-        $imageUrl   = $this->jobImageUrl($job);
-        $imagePath  = $imageUrl ? $this->downloadImage($imageUrl) : null;
+        $message   = $this->buildFullMessage($job, $link, self::LINKEDIN_MAX_LENGTH);
+        $imageUrl  = $this->jobImageUrl($job);
+        $imagePath = $imageUrl ? $this->downloadImage($imageUrl) : null;
 
         try {
-            // Post to Facebook
-            try {
-                if ($imageUrl) {
-                    $this->facebookController->postImage($this->buildFullMessage($job, $link), $imageUrl);
-                } else {
-                    $this->facebookController->post($this->buildFullMessage($job, $link), $link);
-                }
-            } catch (\Exception $e) {
-                Log::error('Erro ao publicar a vaga do Brasil no Facebook: ' . $e->getMessage());
+            if ($imagePath) {
+                $this->linkedInController->publishImage($message, $imagePath);
+            } else {
+                $this->linkedInController->publishLink($message, $link);
             }
-
-            // Post to LinkedIn
-            try {
-                $message = $this->buildFullMessage($job, $link, self::LINKEDIN_MAX_LENGTH);
-
-                if ($imagePath) {
-                    $this->linkedInController->publishImage($message, $imagePath);
-                } else {
-                    $this->linkedInController->publishLink($message, $link);
-                }
-            } catch (\Exception $e) {
-                Log::error('Erro ao publicar a vaga do Brasil no LinkedIn: ' . $e->getMessage());
-            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao publicar a vaga do Brasil no LinkedIn: ' . $e->getMessage());
         } finally {
             if ($imagePath && file_exists($imagePath)) {
                 @unlink($imagePath);
             }
         }
-
-        return response()->json(['status' => 'Posts submitted']);
     }
 
     /**
@@ -121,21 +102,18 @@ class SocialPostController extends Controller
 
     /**
      * Monta a mensagem com o título, a descrição completa e o link da vaga.
-     * Quando $maxLength é informado, apenas a descrição é encurtada para o link
-     * se manter na publicação.
+     * Apenas a descrição é encurtada, para o link se manter na publicação.
      */
-    protected function buildFullMessage(Job $job, string $link, int $maxLength = null): string
+    protected function buildFullMessage(Job $job, string $link, int $maxLength): string
     {
         $header      = $job->title . "\n.\n";
         $footer      = "\n.\nMais detalhes aqui: " . $link . "\n.";
         $description = trim($this->LimparDescricao($job->description));
 
-        if ($maxLength !== null) {
-            $available = max($maxLength - mb_strlen($header) - mb_strlen($footer), 0);
+        $available = max($maxLength - mb_strlen($header) - mb_strlen($footer), 0);
 
-            if (mb_strlen($description) > $available) {
-                $description = rtrim(mb_substr($description, 0, max($available - 3, 0))) . '...';
-            }
+        if (mb_strlen($description) > $available) {
+            $description = rtrim(mb_substr($description, 0, max($available - 3, 0))) . '...';
         }
 
         return $header . $description . $footer;
