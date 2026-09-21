@@ -13,10 +13,12 @@ use App\Models\SocialMediaJob;
 class SocialPostController extends Controller
 {
     /**
-     * Identificação das vagas do Brasil (country_id = 2, "br").
+     * Identificação das vagas do Brasil na tabela countries do portal:
+     * o código ISO manda, e o id 2 (a ordem em que os países foram inseridos)
+     * serve de recurso quando a tabela não estiver acessível.
      */
+    protected const BRAZIL_COUNTRY_CODE = 'BR';
     protected const BRAZIL_COUNTRY_ID = 2;
-    protected const BRAZIL_COUNTRY_CODES = ['br', 'bra', 'brasil', 'brazil'];
 
     /**
      * O LinkedIn rejeita comentários com mais de 3000 caracteres.
@@ -81,23 +83,34 @@ class SocialPostController extends Controller
     }
 
     /**
-     * Verifica se a vaga pertence ao Brasil (country_id = 2, "br").
+     * Verifica se a vaga pertence ao Brasil.
      */
     protected function isBrazilJob(Job $job): bool
     {
-        if ((int) $job->country_id === self::BRAZIL_COUNTRY_ID) {
-            return true;
+        $code = $this->jobCountryCode($job);
+
+        if ($code !== null) {
+            return $code === self::BRAZIL_COUNTRY_CODE;
         }
 
-        foreach (['country_code', 'country'] as $attribute) {
-            $value = $job->{$attribute};
+        // Sem acesso à tabela countries fica o id com que o Brasil foi inserido.
+        return (int) $job->country_id === self::BRAZIL_COUNTRY_ID;
+    }
 
-            if (is_string($value) && in_array(strtolower(trim($value)), self::BRAZIL_COUNTRY_CODES, true)) {
-                return true;
-            }
+    /**
+     * Código ISO do país da vaga, ou null quando não se consegue lê-lo.
+     */
+    protected function jobCountryCode(Job $job): ?string
+    {
+        try {
+            $code = strtoupper(trim((string) optional($job->country)->code));
+
+            return $code === '' ? null : $code;
+        } catch (\Exception $e) {
+            Log::error('Erro ao ler o país da vaga: ' . $e->getMessage());
+
+            return null;
         }
-
-        return false;
     }
 
     /**
