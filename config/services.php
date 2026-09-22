@@ -45,10 +45,16 @@ return [
 
     'linkedinapi' => [
         'token' => env('LINKEDIN_API_TOKEN'),
+        'page_id' => env('LINKEDIN_PAGE_ID', '99975145'),
     ],
 
     'geminiapi' => [
         'token' => env('GEMINI_API_TOKEN'),
+    ],
+
+    'portal' => [
+        'url' => env('PORTAL_URL', 'https://www.angolaemprego.com'),
+        'storage_url' => env('PORTAL_STORAGE_URL', 'https://angolaemprego.com/storage'),
     ],
 
 ];
